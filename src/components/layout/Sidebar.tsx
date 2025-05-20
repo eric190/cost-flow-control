@@ -24,8 +24,8 @@ const Sidebar = () => {
   
   const navItems = [
     { label: "Dashboard", icon: <Home size={20} />, path: "/", roles: ['admin', 'financeiro', 'gestao', 'funcionario'] },
-    { label: "Minhas Despesas", icon: <FileText size={20} />, path: "/expenses", roles: ['admin', 'financeiro', 'gestao', 'funcionario'] },
-    { label: "Enviar Comprovante", icon: <Upload size={20} />, path: "/upload", roles: ['admin', 'financeiro', 'gestao', 'funcionario'] },
+    { label: "Minhas Despesas", icon: <FileText size={20} />, path: "/expenses", roles: ['admin', 'financeiro', 'funcionario'] },
+    { label: "Enviar Comprovante", icon: <Upload size={20} />, path: "/upload", roles: ['admin', 'financeiro', 'funcionario'] },
     { label: "Aprovar Despesas", icon: <DollarSign size={20} />, path: "/approve", roles: ['admin', 'financeiro', 'gestao'] },
     { label: "Relatórios", icon: <BarChart3 size={20} />, path: "/reports", roles: ['admin', 'financeiro', 'gestao'] },
     { label: "Usuários", icon: <Users size={20} />, path: "/users", roles: ['admin'] },

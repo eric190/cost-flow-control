@@ -11,6 +11,7 @@ import AuthPage from "./pages/AuthPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import UploadPage from "./pages/UploadPage";
 import ApprovePage from "./pages/ApprovePage";
+import ReportsPage from "./pages/ReportsPage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/approve" element={<ApprovePage />} />
+            <Route path="/reports" element={<ReportsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
