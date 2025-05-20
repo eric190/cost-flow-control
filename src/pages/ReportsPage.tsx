@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import ExpensesList from '../components/dashboard/ExpensesList';
+import ExpensesSummary from '../components/dashboard/ExpensesSummary';
 import { useAuth } from '../context/AuthContext';
 import { Expense } from '@/types/user';
 import {
@@ -22,6 +23,31 @@ import {
 } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { format } from 'date-fns';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer
+} from "recharts";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs";
+import { ChartBarIcon, ChartPieIcon } from 'lucide-react';
 
 // Mock data
 const mockExpenses: Expense[] = [
@@ -81,10 +107,34 @@ const mockExpenses: Expense[] = [
   }
 ];
 
+// Extended mock data for the departments
+const departmentMockData = [
+  { name: 'Marketing', value: 1735.5 },
+  { name: 'Vendas', value: 2100.0 },
+  { name: 'TI', value: 3200.0 },
+  { name: 'RH', value: 950.0 },
+  { name: 'Financeiro', value: 1280.0 }
+];
+
+// Extended mock data for employees
+const employeeMockData = [
+  { name: 'Employee', department: 'Marketing', expenses: 1635.0 },
+  { name: 'John Doe', department: 'Marketing', expenses: 120.5 },
+  { name: 'Jane Smith', department: 'TI', expenses: 800.0 },
+  { name: 'Carlos Silva', department: 'Vendas', expenses: 1200.0 },
+  { name: 'Ana Oliveira', department: 'Vendas', expenses: 900.0 },
+  { name: 'Pedro Santos', department: 'TI', expenses: 2400.0 },
+  { name: 'Maria Costa', department: 'RH', expenses: 950.0 },
+  { name: 'Roberto Lima', department: 'Financeiro', expenses: 1280.0 }
+];
+
+const COLORS = ['#9b87f5', '#7E69AB', '#F97316', '#33C3F0', '#8E9196', '#ea384c'];
+
 const ReportsPage: React.FC = () => {
   const { user } = useAuth();
   const [expenses] = useState<Expense[]>(mockExpenses);
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("overview");
 
   if (!user) {
     return <Navigate to="/login" />;
@@ -115,6 +165,24 @@ const ReportsPage: React.FC = () => {
   const approvedExpenses = filteredExpenses.filter(e => e.status === 'approved');
   const approvedAmount = approvedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
+  // Calculate expenses by department for finance role
+  const departmentExpenses = useMemo(() => {
+    if (user.role !== 'financeiro' && user.role !== 'admin') {
+      return [];
+    }
+    
+    return departmentMockData;
+  }, [user.role]);
+
+  // Calculate expenses by employee for finance role
+  const employeeExpenses = useMemo(() => {
+    if (user.role !== 'financeiro' && user.role !== 'admin') {
+      return [];
+    }
+    
+    return employeeMockData;
+  }, [user.role]);
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -128,88 +196,332 @@ const ReportsPage: React.FC = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total de Despesas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">R$ {totalExpenses.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {filteredExpenses.length} despesas registradas
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Despesas Pendentes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">R$ {pendingAmount.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {pendingExpenses.length} despesas aguardando aprovação
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Despesas Aprovadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">R$ {approvedAmount.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {approvedExpenses.length} despesas já aprovadas
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <ExpensesSummary expenses={filteredExpenses} />
 
-        {/* Expenses Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalhamento de Despesas</CardTitle>
-            <CardDescription>
-              Lista completa de todas as despesas {user.role === 'gestao' ? `do departamento ${user.department}` : ''}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Funcionário</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredExpenses.map((expense) => (
-                  <TableRow key={expense.id}>
-                    <TableCell>{format(new Date(expense.date), "dd/MM/yyyy")}</TableCell>
-                    <TableCell>{expense.userName}</TableCell>
-                    <TableCell>{expense.description}</TableCell>
-                    <TableCell>R$ {expense.amount.toFixed(2)}</TableCell>
-                    <TableCell>
-                      {expense.status === 'approved' && <span className="text-green-500">Aprovado</span>}
-                      {expense.status === 'rejected' && <span className="text-red-500">Rejeitado</span>}
-                      {expense.status === 'pending' && <span className="text-yellow-500">Pendente</span>}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        {/* Tabs for different views */}
+        <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full md:w-auto grid-cols-3">
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            {(user.role === 'financeiro' || user.role === 'admin') && (
+              <>
+                <TabsTrigger value="departments">Por Departamento</TabsTrigger>
+                <TabsTrigger value="employees">Por Funcionário</TabsTrigger>
+              </>
+            )}
+          </TabsList>
 
-        {/* Pending Expenses List */}
-        {pendingExpenses.length > 0 && (
-          <ExpensesList 
-            expenses={pendingExpenses}
-            title="Despesas Pendentes"
-            description="Despesas aguardando aprovação"
-          />
-        )}
+          {/* Overview Tab - Basic expense table */}
+          <TabsContent value="overview" className="space-y-4">
+            {/* Expenses Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Detalhamento de Despesas</CardTitle>
+                <CardDescription>
+                  Lista completa de todas as despesas {user.role === 'gestao' ? `do departamento ${user.department}` : ''}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Funcionário</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredExpenses.map((expense) => (
+                      <TableRow key={expense.id}>
+                        <TableCell>{format(new Date(expense.date), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>{expense.userName}</TableCell>
+                        <TableCell>{expense.description}</TableCell>
+                        <TableCell>R$ {expense.amount.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {expense.status === 'approved' && <span className="text-green-500">Aprovado</span>}
+                          {expense.status === 'rejected' && <span className="text-red-500">Rejeitado</span>}
+                          {expense.status === 'pending' && <span className="text-yellow-500">Pendente</span>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Pending Expenses List */}
+            {pendingExpenses.length > 0 && (
+              <ExpensesList 
+                expenses={pendingExpenses}
+                title="Despesas Pendentes"
+                description="Despesas aguardando aprovação"
+              />
+            )}
+          </TabsContent>
+
+          {/* Department Expenses Tab - For Finance role only */}
+          {(user.role === 'financeiro' || user.role === 'admin') && (
+            <TabsContent value="departments" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Despesas por Departamento</CardTitle>
+                  <CardDescription>
+                    Visão geral dos gastos de cada departamento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[400px]">
+                    <ChartContainer
+                      config={{
+                        Marketing: {
+                          color: COLORS[0],
+                        },
+                        Vendas: {
+                          color: COLORS[1],
+                        },
+                        TI: {
+                          color: COLORS[2],
+                        },
+                        RH: {
+                          color: COLORS[3],
+                        },
+                        Financeiro: {
+                          color: COLORS[4],
+                        },
+                      }}
+                    >
+                      <BarChart
+                        data={departmentExpenses}
+                        margin={{
+                          top: 20,
+                          right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent 
+                              labelFormatter={(value) => `Departamento: ${value}`}
+                              formatter={(value) => [`R$ ${value.toFixed(2)}`, "Valor"]}
+                            />
+                          }
+                        />
+                        <Legend />
+                        <Bar dataKey="value" name="Valor (R$)" fill="var(--color-Marketing)" />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                  
+                  <div className="mt-8 overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Departamento</TableHead>
+                          <TableHead className="text-right">Total de Despesas</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {departmentExpenses.map((dept) => (
+                          <TableRow key={dept.name}>
+                            <TableCell>{dept.name}</TableCell>
+                            <TableCell className="text-right">R$ {dept.value.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow>
+                          <TableCell className="font-bold">Total</TableCell>
+                          <TableCell className="font-bold text-right">
+                            R$ {departmentExpenses.reduce((sum, dept) => sum + dept.value, 0).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Distribuição de Gastos</CardTitle>
+                  <CardDescription>
+                    Proporção de gastos por departamento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[400px]">
+                    <ChartContainer
+                      config={{
+                        Marketing: { color: COLORS[0] },
+                        Vendas: { color: COLORS[1] },
+                        TI: { color: COLORS[2] },
+                        RH: { color: COLORS[3] },
+                        Financeiro: { color: COLORS[4] },
+                      }}
+                    >
+                      <PieChart>
+                        <Pie
+                          data={departmentExpenses}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={150}
+                          fill="#8884d8"
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                        >
+                          {departmentExpenses.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip 
+                          content={
+                            <ChartTooltipContent
+                              formatter={(value) => [`R$ ${value.toFixed(2)}`, "Valor"]}
+                            />
+                          }
+                        />
+                      </PieChart>
+                    </ChartContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Employee Expenses Tab - For Finance role only */}
+          {(user.role === 'financeiro' || user.role === 'admin') && (
+            <TabsContent value="employees" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Despesas por Funcionário</CardTitle>
+                  <CardDescription>
+                    Visão detalhada dos gastos de cada funcionário
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[400px]">
+                    <ChartContainer
+                      config={{
+                        expenses: { color: "#9b87f5" },
+                      }}
+                    >
+                      <BarChart
+                        data={employeeExpenses}
+                        margin={{
+                          top: 20,
+                          right: 30,
+                          left: 20,
+                          bottom: 60,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="name" 
+                          tick={{ angle: -45 }} 
+                          textAnchor="end" 
+                          height={70}
+                        />
+                        <YAxis />
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent 
+                              labelFormatter={(value) => `Funcionário: ${value}`}
+                              formatter={(value, name) => [`R$ ${value.toFixed(2)}`, "Despesas"]}
+                            />
+                          }
+                        />
+                        <Legend />
+                        <Bar 
+                          dataKey="expenses" 
+                          name="Valor (R$)" 
+                          fill="var(--color-expenses)"
+                        />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+
+                  <div className="mt-8 overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Funcionário</TableHead>
+                          <TableHead>Departamento</TableHead>
+                          <TableHead className="text-right">Total de Despesas</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {employeeExpenses.map((emp) => (
+                          <TableRow key={emp.name}>
+                            <TableCell>{emp.name}</TableCell>
+                            <TableCell>{emp.department}</TableCell>
+                            <TableCell className="text-right">R$ {emp.expenses.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow>
+                          <TableCell colSpan={2} className="font-bold">Total</TableCell>
+                          <TableCell className="font-bold text-right">
+                            R$ {employeeExpenses.reduce((sum, emp) => sum + emp.expenses, 0).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Group by Department */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Despesas por Funcionário (Agrupado por Departamento)</CardTitle>
+                  <CardDescription>
+                    Total de despesas de cada funcionário, agrupado por departamento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-8">
+                    {Array.from(new Set(employeeExpenses.map(emp => emp.department))).map(department => (
+                      <div key={department} className="space-y-4">
+                        <h3 className="text-lg font-semibold">{department}</h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Funcionário</TableHead>
+                              <TableHead className="text-right">Total de Despesas</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {employeeExpenses
+                              .filter(emp => emp.department === department)
+                              .map(emp => (
+                                <TableRow key={emp.name}>
+                                  <TableCell>{emp.name}</TableCell>
+                                  <TableCell className="text-right">R$ {emp.expenses.toFixed(2)}</TableCell>
+                                </TableRow>
+                              ))
+                            }
+                            <TableRow>
+                              <TableCell className="font-bold">Total do Departamento</TableCell>
+                              <TableCell className="font-bold text-right">
+                                R$ {employeeExpenses
+                                  .filter(emp => emp.department === department)
+                                  .reduce((sum, emp) => sum + emp.expenses, 0).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </Layout>
   );
