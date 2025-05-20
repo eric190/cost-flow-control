@@ -4,12 +4,24 @@ import { Navigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import ExpenseUploadForm from '../components/expenses/ExpenseUploadForm';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from "@/components/ui/use-toast";
 
 const UploadPage: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   if (!user) {
     return <Navigate to="/login" />;
+  }
+
+  // Redirect finance users as they don't need to upload expenses
+  if (user.role === 'financeiro') {
+    toast({
+      variant: "destructive",
+      title: "Acesso restrito",
+      description: "Usuários do financeiro não precisam enviar despesas",
+    });
+    return <Navigate to="/reports" />;
   }
 
   return (
