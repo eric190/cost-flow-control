@@ -183,6 +183,14 @@ const ReportsPage: React.FC = () => {
     return employeeMockData;
   }, [user.role]);
 
+  // Custom formatter to safely handle toFixed for value types
+  const formatCurrency = (value: any): string => {
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return String(value);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -307,7 +315,7 @@ const ReportsPage: React.FC = () => {
                           content={
                             <ChartTooltipContent 
                               labelFormatter={(value) => `Departamento: ${value}`}
-                              formatter={(value) => [`R$ ${value.toFixed(2)}`, "Valor"]}
+                              formatter={(value) => [`R$ ${formatCurrency(value)}`, "Valor"]}
                             />
                           }
                         />
@@ -381,7 +389,7 @@ const ReportsPage: React.FC = () => {
                         <ChartTooltip 
                           content={
                             <ChartTooltipContent
-                              formatter={(value) => [`R$ ${value.toFixed(2)}`, "Valor"]}
+                              formatter={(value) => [`R$ ${formatCurrency(value)}`, "Valor"]}
                             />
                           }
                         />
@@ -422,16 +430,19 @@ const ReportsPage: React.FC = () => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="name" 
-                          tick={{ angle: -45 }} 
-                          textAnchor="end" 
+                          tick={{ 
+                            dy: 10,
+                            textAnchor: "end" 
+                          }}
                           height={70}
+                          tickFormatter={(value) => value}
                         />
                         <YAxis />
                         <ChartTooltip
                           content={
                             <ChartTooltipContent 
                               labelFormatter={(value) => `Funcionário: ${value}`}
-                              formatter={(value, name) => [`R$ ${value.toFixed(2)}`, "Despesas"]}
+                              formatter={(value) => [`R$ ${formatCurrency(value)}`, "Despesas"]}
                             />
                           }
                         />
