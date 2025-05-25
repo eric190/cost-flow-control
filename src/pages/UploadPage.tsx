@@ -1,26 +1,32 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import ExpenseUploadForm from '../components/expenses/ExpenseUploadForm';
 import { useAuth } from '../context/AuthContext';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const UploadPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  useEffect(() => {
+    // Show toast for finance users when they try to access this page
+    if (user && user.role === 'financeiro') {
+      toast({
+        variant: "destructive",
+        title: "Acesso restrito",
+        description: "Usuários do financeiro não precisam enviar despesas",
+      });
+    }
+  }, [user, toast]);
+
+  // Handle redirects without early returns
   if (!user) {
     return <Navigate to="/login" />;
   }
 
-  // Redirect finance users as they don't need to upload expenses
   if (user.role === 'financeiro') {
-    toast({
-      variant: "destructive",
-      title: "Acesso restrito",
-      description: "Usuários do financeiro não precisam enviar despesas",
-    });
     return <Navigate to="/reports" />;
   }
 
